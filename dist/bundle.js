@@ -108,16 +108,40 @@ module.exports = { loadItems: loadItems };
 "use strict";
 
 
+var _require = __webpack_require__(0),
+    loadItems = _require.loadItems;
+
+var pgToken = void 0;
+
 function pagination() {
     var paginDiv = document.getElementById('pagination-div');
-    paginDiv.appendChild(document.createElement('span'));
-    paginDiv.appendChild(document.createElement('span'));
-    paginDiv.appendChild(document.createElement('span'));
-    paginDiv.appendChild(document.createElement('span'));
+    var container = document.getElementsByClassName('container');
+    var paginContainer = document.createElement('div');
+    var buttonNext = document.createElement('button');
+    var buttonPrev = document.createElement('button');
+    buttonNext.className = 'button-next';
+    buttonPrev.className = 'button-prev';
+    paginContainer.className = 'pagin-container';
 
-    var spans = document.querySelectorAll('div span');
+    if (document.getElementsByClassName('button-prev').length === 0) {
+        container[0].appendChild(buttonPrev);
+    }
+    paginDiv.appendChild(paginContainer);
+    if (document.getElementsByClassName('button-next').length === 0) {
+        container[0].appendChild(buttonNext);
+    }
+
+    paginContainer.appendChild(document.createElement('span'));
+    paginContainer.appendChild(document.createElement('span'));
+    paginContainer.appendChild(document.createElement('span'));
+    paginContainer.appendChild(document.createElement('span'));
+
+    var spans = document.querySelectorAll('div.pagin-container span');
+    spans.forEach(function (item, index) {
+        item.setAttribute('data-index', index + 1);
+    });
+
     var el = document.getElementById('swipegallery'); // reference gallery's main DIV container
-    var width = document.documentElement.clientWidth;
     var ul = el.getElementsByTagName('ul')[0];
     var gallerywidth = 1281;
 
@@ -127,13 +151,72 @@ function pagination() {
             activeItem(item, index, spans);
         });
     });
+
+    buttonNext.addEventListener('click', function () {
+        var liscount = document.getElementsByTagName("li").length;
+        var currentItem = document.getElementsByClassName('item-active');
+        var curIndex = +currentItem[0].dataset.index;
+        var paginContainer = document.getElementsByClassName('pagin-container');
+
+        pgToken = paginContainer[0].getAttribute('current-pgToken');
+
+        if (curIndex === liscount) {
+            var request = gapi.client.youtube.search.list({
+                part: "snippet",
+                type: "video",
+                q: document.getElementById("search").value,
+                maxResults: 16,
+                pageToken: pgToken,
+                order: "viewCount"
+            });
+
+            request.execute(function (response) {
+                var result = response.result;
+                pgToken = result.nextPageToken;
+                loadItems(result.items);
+                liscount = document.getElementsByTagName("li").length;
+                ul.style.width = gallerywidth * liscount + 'px';
+            });
+            pagination();
+        }
+
+        ul.style.left = -curIndex * gallerywidth + 'px';
+        var spans = document.querySelectorAll('div.pagin-container span');
+        activeItem(spans[curIndex], curIndex, spans);
+    });
+
+    buttonPrev.addEventListener('click', function () {
+        var currentItem = document.getElementsByClassName('item-active');
+        var curIndex = +currentItem[0].dataset.index;
+        if (curIndex - 2 !== -1) {
+            ul.style.left = -(curIndex - 2) * gallerywidth + 'px';
+            var _spans = document.querySelectorAll('div.pagin-container span');
+
+            _spans[curIndex - 2].classList.add('item-active');
+            _spans[curIndex - 1].classList.remove('item-active');
+            _spans[curIndex - 2].innerHTML = '' + (curIndex - 1);
+            _spans[curIndex - 1].innerHTML = '';
+            _spans[curIndex - 2].parentElement.classList.remove('disable');
+            _spans[curIndex - 2].parentElement.classList.add('active');
+            if (_spans[curIndex - 2].parentElement !== _spans[curIndex - 1].parentElement) {
+                _spans[curIndex - 1].parentElement.classList.remove('active');
+                _spans[curIndex - 1].parentElement.classList.add('disable');
+            }
+            _spans[curIndex - 2].parentElement.classList.remove('disable');
+            _spans[curIndex - 2].parentElement.classList.add('active');
+        }
+    });
 }
 
 function activeItem(item, index, spans) {
     spans.forEach(function (i) {
         i.classList.remove('item-active');
+        i.parentElement.classList.remove('active');
+        i.parentElement.classList.add('disable');
         i.innerHTML = '';
     });
+    item.parentElement.classList.remove('disable');
+    item.parentElement.classList.add('active');
     item.classList.add('item-active');
     item.innerHTML = '' + (index + 1);
 }
@@ -304,16 +387,22 @@ window.addEventListener('load', function () {
 
     var paginDiv = document.createElement('div');
     paginDiv.id = "pagination-div";
-    document.body.insertBefore(paginDiv, div.nextSibling);
+    var container = document.createElement('div');
+    container.className = "container";
+    document.body.insertBefore(container, div.nextSibling);
+    container.appendChild(paginDiv);
 
     document.querySelector("form").addEventListener("submit", function (e) {
         e.preventDefault();
+        document.getElementById("result").innerHTML = '';
+        document.getElementById("pagination-div").innerHTML = '';
+        //container.removeChild(buttonPrev);
 
         // prepare the request
         var request = gapi.client.youtube.search.list({
             part: "snippet",
             type: "video",
-            q: encodeURIComponent(document.getElementById("search").value).replace(/%20/g, "+"),
+            q: document.getElementById("search").value,
             maxResults: 16,
             order: "viewCount"
         });
@@ -328,55 +417,25 @@ window.addEventListener('load', function () {
             var firstSpan = document.querySelector('div span');
             firstSpan.classList.add('item-active');
             firstSpan.innerHTML = '1';
+            var paginContainer = document.getElementsByClassName('pagin-container');
+            paginContainer[0].setAttribute('current-pgToken', pgToken);
+            resetVideoHeight();
         });
     });
 
     var el = document.getElementById('swipegallery'); // reference gallery's main DIV container
-    //const gallerywidth = el.offsetWidth;
     var gallerywidth = 1281;
     var ul = el.getElementsByTagName('ul')[0];
     var ulLeft = 0;
     liscount = 4;
     ul.style.width = gallerywidth * liscount + 'px'; // set width of gallery to parent container's width * total li
-
     ontouch(el, function (evt, dir, phase, swipetype, distance) {
         if (phase == 'start') {
             // on touchstart
-
-            if (curindex === liscount - 2) {
-                var request = gapi.client.youtube.search.list({
-                    part: "snippet",
-                    type: "video",
-                    q: encodeURIComponent(document.getElementById("search").value).replace(/%20/g, "+"),
-                    maxResults: 16,
-                    pageToken: pgToken,
-                    order: "viewCount"
-                });
-                request.execute(function (response) {
-                    var result = response.result;
-                    pgToken = result.nextPageToken;
-                    loadItems(result.items);
-                    liscount = document.getElementsByTagName("li").length;
-                    ul.style.width = gallerywidth * liscount + 'px';
-                    pagination();
-                });
-            }
             ulLeft = parseInt(ul.style.left) || 0; // initialize ulLeft var with left position of UL
         } else if (phase == 'move' && (dir == 'left' || dir == 'right')) {
             //  on touchmove and if moving left or right
-
             var totaldist = distance + ulLeft; // calculate new left position of UL based on movement of finger
-            var width = document.documentElement.clientWidth;
-            gallerywidth = 1281;
-            /*if (width < 670) {
-                gallerywidth = 320;
-            } else if ((width >= 670) && (width < 1024)) {
-                gallerywidth = 640;
-            } else if ((width >= 1024) && (width < 1300)) {
-                gallerywidth = 960;
-            } else {
-                gallerywidth = 1281;
-            }*/
             ul.style.left = Math.min(totaldist, (curindex + 1) * gallerywidth) + 'px'; // set gallery to new left position
         } else if (phase == 'end') {
             // on touchend
@@ -385,7 +444,26 @@ window.addEventListener('load', function () {
                 curindex = swipetype == 'left' ? Math.min(curindex + 1, liscount - 1) : Math.max(curindex - 1, 0);
             }
             ul.style.left = -curindex * gallerywidth + 'px'; // move UL to show the new image
-            var spans = document.querySelectorAll('div span');
+            if (curindex === liscount - 2) {
+                var request = gapi.client.youtube.search.list({
+                    part: "snippet",
+                    type: "video",
+                    q: document.getElementById("search").value,
+                    maxResults: 16,
+                    pageToken: pgToken,
+                    order: "viewCount"
+                });
+
+                request.execute(function (response) {
+                    var result = response.result;
+                    pgToken = result.nextPageToken;
+                    loadItems(result.items);
+                    liscount = document.getElementsByTagName("li").length;
+                    ul.style.width = gallerywidth * liscount + 'px';
+                });
+                pagination();
+            }
+            var spans = document.querySelectorAll('div.pagin-container span');
             spans.forEach(function (item, index) {
                 if (index === curindex) {
                     activeItem(item, index, spans);
@@ -393,7 +471,22 @@ window.addEventListener('load', function () {
             });
         }
     }); // end ontouch
+    window.addEventListener('resize', resetVideoHeight, false);
 }, false);
+
+function resetVideoHeight() {
+    var touchgallery = document.getElementsByClassName('touchgallery');
+    var width = document.documentElement.clientWidth;
+    if (width < 656) {
+        touchgallery[0].style.width = '320px';
+    } else if (width >= 656 && width <= 975) {
+        touchgallery[0].style.width = '638px';
+    } else if (width >= 976 && width <= 1295) {
+        touchgallery[0].style.width = '962px';
+    } else {
+        touchgallery[0].style.width = '1281px';
+    }
+}
 
 /***/ })
 /******/ ]);

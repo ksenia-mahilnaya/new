@@ -21,96 +21,105 @@ window.addEventListener('load', function(){
 
     const paginDiv = document.createElement('div');
     paginDiv.id = "pagination-div";
-    document.body.insertBefore(paginDiv, div.nextSibling);
+    const container = document.createElement('div');
+    container.className = "container";
+    document.body.insertBefore(container, div.nextSibling);
+    container.appendChild(paginDiv);
 
     document.querySelector("form").addEventListener("submit", function(e) {
         e.preventDefault();
+        document.getElementById("result").innerHTML = '';
+        document.getElementById("pagination-div").innerHTML = '';
+        //container.removeChild(buttonPrev);
 
-        // prepare the request
-        const request = gapi.client.youtube.search.list({
-            part: "snippet",
-            type: "video",
-            q: encodeURIComponent(document.getElementById("search").value).replace(/%20/g, "+"),
-            maxResults: 16,
-            order: "viewCount"
-        });
-        // execute the request
-        request.execute(function (response) {
-            const result = response.result;
-            pgToken = result.nextPageToken;
-            loadItems(result.items);
-            liscount = document.getElementsByTagName("li").length;
-            ul.style.width = gallerywidth * liscount + 'px' ;
-            pagination();
-            const firstSpan = document.querySelector('div span');
-            firstSpan.classList.add('item-active');
-            firstSpan.innerHTML = '1';
-        });
+            // prepare the request
+            const request = gapi.client.youtube.search.list({
+                part: "snippet",
+                type: "video",
+                q: document.getElementById("search").value,
+                maxResults: 16,
+                order: "viewCount"
+            });
+            // execute the request
+            request.execute(function (response) {
+                const result = response.result;
+                pgToken = result.nextPageToken;
+                loadItems(result.items);
+                liscount = document.getElementsByTagName("li").length;
+                ul.style.width = gallerywidth * liscount + 'px' ;
+                pagination();
+                const firstSpan = document.querySelector('div span');
+                firstSpan.classList.add('item-active');
+                firstSpan.innerHTML = '1';
+                const paginContainer = document.getElementsByClassName('pagin-container');
+                paginContainer[0].setAttribute('current-pgToken', pgToken);
+                resetVideoHeight();
+            });
+
 
     });
 
     const el = document.getElementById('swipegallery'); // reference gallery's main DIV container
-    //const gallerywidth = el.offsetWidth;
-    let gallerywidth = 1281;
+    const gallerywidth = 1281;
     const ul = el.getElementsByTagName('ul')[0];
     let ulLeft = 0;
     liscount = 4;
     ul.style.width = gallerywidth * liscount + 'px' ;// set width of gallery to parent container's width * total li
-
     ontouch(el, function(evt, dir, phase, swipetype, distance){
         if (phase == 'start'){ // on touchstart
+            ulLeft = parseInt(ul.style.left) || 0; // initialize ulLeft var with left position of UL
 
+        }
+        else if (phase == 'move' && (dir == 'left' || dir == 'right')){ //  on touchmove and if moving left or right
+            let totaldist = distance + ulLeft;// calculate new left position of UL based on movement of finger
+            ul.style.left = Math.min(totaldist, (curindex + 1) * gallerywidth) + 'px'; // set gallery to new left position
+        }
+        else if (phase == 'end'){ // on touchend
+            if (swipetype == 'left' || swipetype == 'right'){ // if a successful left or right swipe is made
+                curindex = (swipetype == 'left') ?  Math.min(curindex + 1, liscount - 1) : Math.max(curindex-1, 0);
+            }
+            ul.style.left = -curindex * gallerywidth + 'px'; // move UL to show the new image
             if (curindex === liscount - 2) {
                 const request = gapi.client.youtube.search.list({
                     part: "snippet",
                     type: "video",
-                    q: encodeURIComponent(document.getElementById("search").value).replace(/%20/g, "+"),
+                    q: document.getElementById("search").value,
                     maxResults: 16,
                     pageToken: pgToken,
                     order: "viewCount"
                 });
+
                 request.execute(function (response) {
                     const result = response.result;
                     pgToken = result.nextPageToken;
                     loadItems(result.items);
                     liscount = document.getElementsByTagName("li").length;
                     ul.style.width = gallerywidth * liscount + 'px' ;
-                    pagination();
                 });
-
+                pagination();
             }
-            ulLeft = parseInt(ul.style.left) || 0; // initialize ulLeft var with left position of UL
-        }
-        else if (phase == 'move' && (dir == 'left' || dir == 'right')){ //  on touchmove and if moving left or right
-
-            let totaldist = distance + ulLeft;// calculate new left position of UL based on movement of finger
-            const width = document.documentElement.clientWidth;
-            gallerywidth = 1281;
-            /*if (width < 670) {
-                gallerywidth = 320;
-            } else if ((width >= 670) && (width < 1024)) {
-                gallerywidth = 640;
-            } else if ((width >= 1024) && (width < 1300)) {
-                gallerywidth = 960;
-            } else {
-                gallerywidth = 1281;
-            }*/
-            ul.style.left = Math.min(totaldist, (curindex + 1) * gallerywidth) + 'px'; // set gallery to new left position
-        }
-        else if (phase == 'end'){ // on touchend
-            if (swipetype == 'left' || swipetype == 'right'){ // if a successful left or right swipe is made
-                    curindex = (swipetype == 'left') ?  Math.min(curindex + 1, liscount - 1) : Math.max(curindex-1, 0);
-            }
-            ul.style.left = -curindex * gallerywidth + 'px'; // move UL to show the new image
-            const spans = document.querySelectorAll('div span');
+            const spans = document.querySelectorAll('div.pagin-container span');
             spans.forEach(function(item, index) {
                 if ( (index === curindex) ) {
                     activeItem(item, index, spans);
                 }
             });
         }
-    }); // end ontouch
+    });// end ontouch
+    window.addEventListener('resize', resetVideoHeight , false );
+
 }, false);
 
-
-
+function resetVideoHeight() {
+    const touchgallery = document.getElementsByClassName('touchgallery');
+    const width = document.documentElement.clientWidth;
+    if (width < 656) {
+        touchgallery[0].style.width = '320px';
+    } else if ((width >= 656) && (width <= 975)) {
+        touchgallery[0].style.width = '638px';
+    } else if ((width >= 976) && (width <= 1295)) {
+        touchgallery[0].style.width = '962px';
+    } else {
+        touchgallery[0].style.width = '1281px';
+    }
+}

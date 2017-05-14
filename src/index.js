@@ -102,7 +102,6 @@ window.addEventListener('load', function(){
             }
             ul.style.left = -curindex * gallerywidth + 'px'; // move UL to show the new image
             const spans = document.querySelectorAll('div span');
-            console.log(curindex);
             spans.forEach(function(item, index) {
                 if ( (index === curindex) ) {
                     activeItem(item, index, spans);

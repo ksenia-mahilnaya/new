@@ -85,7 +85,8 @@ window.addEventListener('load', function(){
 
             let totaldist = distance + ulLeft;// calculate new left position of UL based on movement of finger
             const width = document.documentElement.clientWidth;
-            if (width < 670) {
+            gallerywidth = 1281;
+            /*if (width < 670) {
                 gallerywidth = 320;
             } else if ((width >= 670) && (width < 1024)) {
                 gallerywidth = 640;
@@ -93,12 +94,12 @@ window.addEventListener('load', function(){
                 gallerywidth = 960;
             } else {
                 gallerywidth = 1281;
-            }
+            }*/
             ul.style.left = Math.min(totaldist, (curindex + 1) * gallerywidth) + 'px'; // set gallery to new left position
         }
         else if (phase == 'end'){ // on touchend
             if (swipetype == 'left' || swipetype == 'right'){ // if a successful left or right swipe is made
-                curindex = (swipetype == 'left') ?  Math.min(curindex + 1, liscount - 1) : Math.max(curindex-1, 0); // get new index of image to show
+                    curindex = (swipetype == 'left') ?  Math.min(curindex + 1, liscount - 1) : Math.max(curindex-1, 0);
             }
             ul.style.left = -curindex * gallerywidth + 'px'; // move UL to show the new image
             const spans = document.querySelectorAll('div span');
@@ -106,17 +107,7 @@ window.addEventListener('load', function(){
                 if ( (index === curindex) ) {
                     activeItem(item, index, spans);
                 }
-                /*if ( (gallerywidth === 320) && (index === curindex) ) {
-                 activeItem(item, index, spans);
-                 } else if ( (gallerywidth === 640) && (index === curindex) ) {
-                 activeItem(item, index, spans);
-                 } else if ( (gallerywidth === 960) && (index === curindex) ) {
-                 activeItem(item, index, spans);
-                 } else  if ( (gallerywidth === 1281) && (index === curindex) ) {
-                 activeItem(item, index, spans);
-                 }*/
-
-                 });
+            });
         }
     }); // end ontouch
 }, false);

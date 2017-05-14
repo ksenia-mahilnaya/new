@@ -160,7 +160,7 @@ input[type="submit"]:hover {
 @media (max-width: 400px) {
     .input-border {
         width: 300px;
-        margin: 0;
+        margin: 2px auto;
     }
     input[type="text"] {
         width: 200px;
@@ -169,7 +169,7 @@ input[type="submit"]:hover {
         width: 86%;
     }
     .video-item {
-        margin: 0;
+        margin-top: 2px;
     }
 }
 

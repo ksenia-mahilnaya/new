@@ -157,6 +157,18 @@ input[type="submit"]:hover {
     margin: 0 2px;
 }
 
+@media (max-width: 400px) {
+    .input-border {
+        width: 300px;
+    }
+    input[type="text"] {
+        width: 150px;
+    }
+    .touchgallery {
+        width: 86%;
+    }
+}
+
 @media (max-width: 599px) {
     .input-border {
         width: 300px;
@@ -168,4 +180,6 @@ input[type="submit"]:hover {
         width: 86%;
     }
 }
+
+
 

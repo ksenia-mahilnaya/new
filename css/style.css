@@ -169,7 +169,7 @@ input[type="submit"]:hover {
     }
 }
 
-@media (max-width: 599px) {
+@media (min-width: 401px) and (max-width: 599px) {
     .input-border {
         width: 300px;
     }
